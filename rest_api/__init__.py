@@ -7,7 +7,10 @@ app = Flask(__name__)
 app = Flask(__name__)
 api = Api(app)
 
-todos = {}
+todos = {
+    'todo1': 'Remember the milk',
+    'todo2': 'Change my brakepads',
+}
 
 
 class TodoSimple(Resource):
