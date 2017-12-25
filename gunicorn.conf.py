@@ -11,7 +11,7 @@ import os
 #       An IP is a valid HOST.
 #
 
-PORT = int(os.environ.get('PORT', 5000))  # default to 5000
+PORT = int(os.getenv('PORT', 5000))  # default to 5000
 
 bind = f'0.0.0.0:{PORT}'
 
@@ -34,7 +34,7 @@ bind = f'0.0.0.0:{PORT}'
 #       True or False
 #
 
-reload = bool(os.getenv('GUNICORN_RELOAD', False))
+reload = bool(os.getenv('GUNICORN_RELOAD', False))  # default to False for production
 spew = False
 
 #
@@ -50,4 +50,4 @@ spew = False
 #
 
 logfile = '-'
-loglevel = os.getenv('GUNICORN_LOG_LEVEL', 'info')
+loglevel = os.getenv('GUNICORN_LOG_LEVEL', 'info')  # default to 'info' for production
