@@ -33,7 +33,7 @@ app = Flask(__name__)
 # Use environment variables in production or default values in development with Dockerized Redis
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')  # default to empty for local development
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')  # default to localhost for local development
-REDIS_PORT = int(os.getenv('PORT', 6379))  # default to 6379 for local development
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))  # default to 6379 for local development
 REDIS_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
 cache = Cache(app,
               config={
