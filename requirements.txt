@@ -1,4 +1,6 @@
-hammock
-Flask==0.12
+hammock==0.2.4
+Flask==0.12.2
+Flask-Caching==1.3.3
 Flask-RESTful==0.3.6
 gunicorn==19.7.1
+redis==2.10.6
