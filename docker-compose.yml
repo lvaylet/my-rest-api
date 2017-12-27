@@ -12,7 +12,11 @@ services:
       - LMS_TOKEN
     ports:
       - "5000:5000"
-    command: gunicorn rest_api:app --log-file -
+    command: >
+      gunicorn
+        rest_api:app
+        --access-logfile -
+        --error-logfile -
 
   redis:
     restart: always
