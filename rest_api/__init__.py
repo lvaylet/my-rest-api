@@ -2,18 +2,25 @@
 # -*- coding: utf-8 -*-
 
 """
-A REST API meant to be deployed with Flynn.
+# Development
 
-# Development Mode
+Two options:
 
-Run a dockerized Redis (https://hub.docker.com/r/_/redis/) with default settings:
+1. Mimic production environment and display logs with:
+```
+$ docker-compose up --build
+```
+
+2. Ceate a Redis container (https://hub.docker.com/r/_/redis/) before running `__init__.py from Pycharm:
 ```
 $ docker run --name redis-rest-api -d -p 6379:6379 redis
 ```
 
-# Production Mode
+Then the REST API can be queried at http://localhost:5000
 
-Provision a Redis database from Flynn, with default settings
+# Production
+
+Provision a Redis database from Flynn (with default settings) then deploy this repo.
 """
 
 import os
@@ -34,10 +41,11 @@ app = Flask(__name__)
 # except IOError:
 #     app.logger.warning("Could not load app_config.py")
 
+
 # Configure Flask-Caching with Redis
 # Use environment variables in production or default values in development with Dockerized Redis
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')  # default to empty for local development
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')  # default to localhost for local development
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')  # default to localhost for local development
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))  # default to 6379 for local development
 REDIS_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
 cache = Cache(app,
@@ -47,14 +55,17 @@ cache = Cache(app,
                   'CACHE_DEFAULT_TIMEOUT': 3600,  # in seconds
               })
 
+
 # Configure Flask-RESTful
 api = Api(app)
+
 
 # Credentials and Hammock instances
 # TODO Move to beforeFirstRequest?
 LMS_TOKEN = os.environ['LMS_TOKEN']
 LMS = hammock.Hammock('https://talend.talentlms.com/api/v1',
                       auth=(LMS_TOKEN, ''))
+
 
 # Data
 # FIXME Save in database (Redis, same as caching?)
@@ -70,18 +81,21 @@ def setup_logging():
     # Add console handler in production mode to have Gunicorn capture logging messages from Flask
     # https://github.com/benoitc/gunicorn/issues/379
     # https://docs.python.org/3/howto/logging.html#configuring-logging
-    if not app.debug:  # production mode only
-        import logging
+    # if not app.debug:  # production mode only
+    # import logging
+    #
+    # console_handler = logging.StreamHandler()
+    # console_handler.setLevel(logging.INFO)
+    # console_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(module)s | %(message)s')
+    # console_handler.setFormatter(console_formatter)
+    #
+    # app.logger.addHandler(console_handler)
+    #
+    # app.logger.setLevel(logging.INFO)
+    pass
 
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        console_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(module)s | %(message)s')
-        console_handler.setFormatter(console_formatter)
 
-        app.logger.addHandler(console_handler)
-
-
-# Errors
+# Error Handlers
 @app.errorhandler(404)
 def page_not_found(e):
     app.logger.error('Page not found! Rendering error page...')
@@ -101,6 +115,7 @@ def connection_error(e):
                            description=description), 500
 
 
+# Resources
 @api.resource('/todos/<string:todo_id>')
 class Todo(Resource):
     def get(self, todo_id):

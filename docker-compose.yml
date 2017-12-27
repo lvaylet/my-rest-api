@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  web:
+    restart: always
+    build: .
+    environment:
+      # https://docs.python.org/3/using/cmdline.html#cmdoption-u
+      - PYTHONUNBUFFERED=true
+      # Pass environment variables from .env in containers
+      # https://docs.docker.com/compose/environment-variables/
+      - LMS_TOKEN
+    ports:
+      - "5000:5000"
+    command: gunicorn rest_api:app --log-file -
+
+  redis:
+    restart: always
+    image: redis
+    ports:
+      - "6379:6379"
