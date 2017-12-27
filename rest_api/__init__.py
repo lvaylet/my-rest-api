@@ -18,7 +18,6 @@ Provision a Redis database from Flynn, with default settings
 
 import os
 import hammock
-import logging
 from flask import Flask, request, render_template, redirect
 from flask_caching import Cache
 from flask_restful import Resource, Api
@@ -68,13 +67,18 @@ todos = {
 # Logging
 @app.before_first_request
 def setup_logging():
-    if not app.debug:
-        # Have gunicorn capture logging messages from Flask
-        # https://github.com/benoitc/gunicorn/issues/379
-        # ---
-        # In production mode, add log handler to sys.stderr
-        app.logger.addHandler(logging.StreamHandler())
-        app.logger.setLevel(logging.INFO)
+    # Add console handler in production mode to have Gunicorn capture logging messages from Flask
+    # https://github.com/benoitc/gunicorn/issues/379
+    # https://docs.python.org/3/howto/logging.html#configuring-logging
+    if not app.debug:  # production mode only
+        import logging
+
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(module)s | %(message)s')
+        console_handler.setFormatter(console_formatter)
+
+        app.logger.addHandler(console_handler)
 
 
 # Errors
