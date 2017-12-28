@@ -1,28 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-# Development
-
-Two options:
-
-1. Mimic production environment and display logs with:
-```
-$ docker-compose up --build
-```
-
-2. Ceate a Redis container (https://hub.docker.com/r/_/redis/) before running `__init__.py from Pycharm:
-```
-$ docker run --name redis-rest-api -d -p 6379:6379 redis
-```
-
-Then the REST API can be queried at http://localhost:5000
-
-# Production
-
-Provision a Redis database from Flynn (with default settings) then deploy this repo.
-"""
-
 import os
 import hammock
 from flask import Flask, request, render_template, redirect
@@ -32,28 +10,16 @@ from redis import ConnectionError
 
 # Configure Flask application
 app = Flask(__name__)
-# Load config from local file
-# import logging.config
-# try:
-#     app.config.from_pyfile('app_config.py')
-#     if 'LOGGING' in app.config:
-#         logging.config.dictConfig(app.config['LOGGING'])
-# except IOError:
-#     app.logger.warning("Could not load app_config.py")
 
 
-# Configure Flask-Caching with Redis
-# Use environment variables in production or default values in development with Dockerized Redis
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')  # default to empty for local development
-REDIS_HOST = os.getenv('REDIS_HOST', 'redis')  # default to localhost for local development
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))  # default to 6379 for local development
-REDIS_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
-cache = Cache(app,
-              config={
-                  'CACHE_TYPE': 'redis',
-                  'CACHE_REDIS_URL': REDIS_URL,
-                  'CACHE_DEFAULT_TIMEOUT': 3600,  # in seconds
-              })
+# Load configuration from object in local module
+# https://realpython.com/blog/python/flask-by-example-part-1-project-setup/
+config_module = os.environ['FLASK_CONFIG']
+app.config.from_object(config_module)
+
+
+# Configure Flask-Caching
+cache = Cache(app, config=app.config['CACHING_REDIS'])
 
 
 # Configure Flask-RESTful
@@ -75,26 +41,6 @@ todos = {
 }
 
 
-# Logging
-@app.before_first_request
-def setup_logging():
-    # Add console handler in production mode to have Gunicorn capture logging messages from Flask
-    # https://github.com/benoitc/gunicorn/issues/379
-    # https://docs.python.org/3/howto/logging.html#configuring-logging
-    # if not app.debug:  # production mode only
-    # import logging
-    #
-    # console_handler = logging.StreamHandler()
-    # console_handler.setLevel(logging.INFO)
-    # console_formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(module)s | %(message)s')
-    # console_handler.setFormatter(console_formatter)
-    #
-    # app.logger.addHandler(console_handler)
-    #
-    # app.logger.setLevel(logging.INFO)
-    pass
-
-
 # Error Handlers
 @app.errorhandler(404)
 def page_not_found(e):
@@ -106,10 +52,11 @@ def page_not_found(e):
 
 @app.errorhandler(ConnectionError)
 def connection_error(e):
-    debug_description = 'a (dockerized?) <strong>redis-server</strong> is running locally'
-    production_description = 'a <strong>redis-server</strong> has been provisioned in Flynn for this app'
+    debug_description = 'a (containerized?) <strong>Redis server</strong> is running locally'
+    production_description = 'a <strong>Redis server</strong> has been provisioned in Flynn for this app'
     description = 'Please confirm that %s.' % (debug_description if app.debug else production_description)
-    app.logger.error(f'Could not connect to the Redis cache! (at {REDIS_URL})')
+    redis_url = app.config['CACHING_REDIS']['CACHE_REDIS_URL']
+    app.logger.error(f'Could not connect to the Redis cache! (at {redis_url})')
     return render_template('error.html',
                            message='Could not connect to the Redis cache!',
                            description=description), 500
@@ -119,11 +66,9 @@ def connection_error(e):
 @api.resource('/todos/<string:todo_id>')
 class Todo(Resource):
     def get(self, todo_id):
-        app.logger.info(f'Fetching todo item with ID [{todo_id}]...')
         return {todo_id: todos[todo_id]}
 
     def put(self, todo_id):
-        app.logger.info(f'Creating todo item with ID [{todo_id}]...')
         todos[todo_id] = request.form['data']
         return {todo_id: todos[todo_id]}, 201
 
@@ -131,7 +76,6 @@ class Todo(Resource):
 @api.resource('/todos')
 class TodoList(Resource):
     def get(self):
-        app.logger.info('Fetching all todo items...')
         return todos
 
 
@@ -139,7 +83,6 @@ class TodoList(Resource):
 class LMSUserList(Resource):
     @cache.cached()
     def get(self):
-        app.logger.info('Fetching users on LMS...')
         return LMS.users.GET().json()
 
 
@@ -147,17 +90,10 @@ class LMSUserList(Resource):
 class LMSCourseList(Resource):
     @cache.cached()
     def get(self):
-        app.logger.info('Fetching courses on LMS...')
         return LMS.courses.GET().json()
 
 
 # Views
 @app.route('/')
 def index():
-    app.logger.info('Redirecting to /todos...')
     return redirect('/todos')
-
-
-# Enable debug mode when app is ran locally in development mode
-if __name__ == '__main__':
-    app.run(debug=True)

@@ -7,16 +7,18 @@ services:
     environment:
       # https://docs.python.org/3/using/cmdline.html#cmdoption-u
       - PYTHONUNBUFFERED=true
+      # Configure Flask app
+      - FLASK_CONFIG=config.DevelopmentConfig
       # Pass environment variables from .env in containers
       # https://docs.docker.com/compose/environment-variables/
       - LMS_TOKEN
     ports:
-      - "5000:5000"
+      - "8000:8000"
     command: >
       gunicorn
-        rest_api:app
+        run:app
+        --bind 0.0.0.0:8000
         --access-logfile -
-        --error-logfile -
 
   redis:
     restart: always

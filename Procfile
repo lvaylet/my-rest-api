@@ -1,1 +1,1 @@
-web: gunicorn rest_api:app --access-logfile - --error-logfile -
+web: gunicorn run:app --access-logfile -
