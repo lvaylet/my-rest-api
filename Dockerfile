@@ -1,4 +1,8 @@
-FROM python:3.6.3-slim
+FROM python:3.6-slim
+
+MAINTAINER Laurent Vaylet <laurent.vaylet@gmail.com>
+
+WORKDIR "/usr/src/app"
 
 # Install packages
 # Leverage Docker's caching by only copying `requirements.txt`

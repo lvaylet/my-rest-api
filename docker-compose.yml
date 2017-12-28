@@ -13,12 +13,16 @@ services:
       # https://docs.docker.com/compose/environment-variables/
       - LMS_TOKEN
     ports:
+      # HOST:CONTAINER
       - "8000:8000"
+    volumes:
+      - .:/usr/src/app
     command: >
       gunicorn
         run:app
         --bind 0.0.0.0:8000
         --access-logfile -
+        --reload
 
   redis:
     restart: always
