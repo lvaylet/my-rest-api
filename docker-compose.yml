@@ -17,6 +17,8 @@ services:
       - "8000:8000"
     volumes:
       - .:/usr/src/app
+    # Serve with Gunicorn
+    # NOTE: Gunicorn logs to stderr by default since 19.2, so no need for "--log-file -" or "--error-logfile -"
     command: >
       gunicorn
         run:app
