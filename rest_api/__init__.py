@@ -6,6 +6,7 @@
 
 import logging
 import os
+from functools import wraps
 
 import hammock
 from flask import Flask, request, render_template, redirect
@@ -67,6 +68,22 @@ LMS_TOKEN = os.environ['LMS_TOKEN']
 LMS = hammock.Hammock('https://talend.talentlms.com/api/v1',
                       auth=(LMS_TOKEN, ''))
 
+
+# Decorators
+def return_as_json_api(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        raw_data = f(*args, **kwds)
+        return {
+            'data': raw_data,
+            'jsonapi': {
+                'version': '1.0'
+            }
+        }
+
+    return wrapper
+
+
 # Data
 # FIXME Save in database (Redis, same as caching?)
 todos = {
@@ -99,10 +116,12 @@ def connection_error(e):
 # Resources
 @api.resource('/todos/<string:todo_id>')
 class Todo(Resource):
+    @return_as_json_api
     def get(self, todo_id):
         app.logger.debug(f'Fetching todo item with ID [{todo_id}]...')
         return {todo_id: todos[todo_id]}
 
+    @return_as_json_api
     def put(self, todo_id):
         payload = request.form['data']
         app.logger.debug(f'Updating todo item with ID [{todo_id}] with payload [{payload}]...')
@@ -112,6 +131,7 @@ class Todo(Resource):
 
 @api.resource('/todos')
 class TodoList(Resource):
+    @return_as_json_api
     def get(self):
         app.logger.debug('Fetching all todo items...')
         return todos
@@ -120,6 +140,7 @@ class TodoList(Resource):
 @api.resource('/lms/users')
 class LMSUserList(Resource):
     @cache.cached()
+    @return_as_json_api
     def get(self):
         app.logger.debug('Fetching LMS users...')
         return LMS.users.GET().json()
@@ -128,6 +149,7 @@ class LMSUserList(Resource):
 @api.resource('/lms/courses')
 class LMSCourseList(Resource):
     @cache.cached()
+    @return_as_json_api
     def get(self):
         app.logger.debug('Fetching LMS courses...')
         return LMS.courses.GET().json()
