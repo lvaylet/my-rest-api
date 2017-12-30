@@ -158,7 +158,7 @@ class Todo(Resource):
     def delete(self, todo_id):
         try:
             del todos[todo_id]
-            return '', 204
+            return '', 204  # No Content
         except KeyError:
             abort(404, message=f'Todo item with ID [{todo_id}] does not exist.')
 
