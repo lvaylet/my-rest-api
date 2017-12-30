@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # TODO Use JSON API specifications: http://jsonapi.org/
+# TODO Add description of .env (and LMS token) in README.md
+# TODO USe recommended project structure (https://flask-restful.readthedocs.io/en/latest/intermediate-usage.html#project-structure)
 
 import logging
 import os
