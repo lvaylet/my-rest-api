@@ -1,4 +1,5 @@
 from rest_api import app
 
 if __name__ == '__main__':
-    app.run(port=app.config['PORT'])
+    app.run(host=app.config['HOST'], 
+            port=app.config['PORT'])
