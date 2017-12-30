@@ -16,10 +16,20 @@ On the development machine, clone the Git repo:
 $ git clone https://github.com/lvaylet/rest-api
 ```
 
-Inside the cloned repo, create a Flynn application:
+Inside the cloned repo, create a `.env file to store secret credentials as environment variables:
 
 ```bash
 $ cd rest-api
+$ cat > .env <<EOF
+LMS_TOKEN=...
+EXTRA_TOKEN=...
+USERNAME=...
+EOF
+```
+
+The next step is to create a Flynn application (still inside the cloned repo):
+
+```bash
 $ flynn create rest-api
 Created rest-api
 ```
