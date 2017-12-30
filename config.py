@@ -1,4 +1,5 @@
 import os
+import logging
 
 # Helper constants for Redis caching
 # Use environment variables in production or default values in development with Dockerized Redis
@@ -16,12 +17,14 @@ class BaseConfig(object):
         'CACHE_REDIS_URL': REDIS_URL,
         'CACHE_DEFAULT_TIMEOUT': 3600,  # in seconds
     }
-    PORT = 8000
 
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
+    HOST = '0.0.0.0'
+    PORT = 8000
+    LOG_LEVEL = logging.DEBUG
 
 
 class ProductionConfig(BaseConfig):
-    pass
+    LOG_LEVEL = logging.INFO
