@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 
 # TODO Use JSON API specifications: http://jsonapi.org/
-# TODO Configure deployment on push with Flynn (add remote, refer to Flynn docs and Python example app)
 
 import logging
 import os
 from functools import wraps
 
 import hammock
-from flask import Flask, request, render_template, redirect
+from flask import Flask, render_template, redirect, url_for
 from flask_caching import Cache
-from flask_restful import Resource, Api
+from flask_restful import Api, Resource, reqparse, abort
 from redis import ConnectionError
 
 # Configure Flask application
@@ -51,10 +50,7 @@ app.config.from_object(config_module)
 gunicorn_error_logger = logging.getLogger('gunicorn.error')
 app.logger.handlers = gunicorn_error_logger.handlers
 
-if app.config['DEBUG']:
-    app.logger.setLevel(logging.DEBUG)  # development
-else:
-    app.logger.setLevel(logging.INFO)  # production
+app.logger.setLevel(app.config['LOG_LEVEL'])
 
 # Configure Flask-Caching
 cache = Cache(app, config=app.config['CACHING_REDIS'])
@@ -73,13 +69,33 @@ LMS = hammock.Hammock('https://talend.talentlms.com/api/v1',
 def return_as_json_api(f):
     @wraps(f)
     def wrapper(*args, **kwds):
-        raw_data = f(*args, **kwds)
+        raw_data = f(*args, **kwds)  # JSON response or tuple with (JSON response, response code, response headers)
+
+        # TODO Refactor with something more pythonic, or a parser like marshmallow
+        if isinstance(raw_data, tuple):
+            # Parse tuple (and use default values on missing data)
+            response = raw_data[0]
+
+            try:
+                response_code = raw_data[1]
+            except IndexError:
+                response_code = 200
+
+            try:
+                response_headers = raw_data[2]
+            except IndexError:
+                response_headers = {}
+        else:
+            response = raw_data
+            response_code = 200
+            response_headers = {}
+
         return {
-            'data': raw_data,
+            'data': response,
             'jsonapi': {
                 'version': '1.0'
             }
-        }
+        }, response_code, response_headers
 
     return wrapper
 
@@ -113,20 +129,38 @@ def connection_error(e):
                            description=description), 500
 
 
+# Parse and validate form data
+# https://flask-restful.readthedocs.io/en/latest/quickstart.html#argument-parsing
+parser = reqparse.RequestParser()
+parser.add_argument('task')
+
+
 # Resources
-@api.resource('/todos/<string:todo_id>')
+@api.resource('/todo/<string:todo_id>')
 class Todo(Resource):
     @return_as_json_api
     def get(self, todo_id):
         app.logger.debug(f'Fetching todo item with ID [{todo_id}]...')
-        return {todo_id: todos[todo_id]}
+        try:
+            return {todo_id: todos[todo_id]}, 200
+        except KeyError:
+            abort(404, message=f'Todo item with ID [{todo_id}] does not exist.')
 
     @return_as_json_api
     def put(self, todo_id):
-        payload = request.form['data']
-        app.logger.debug(f'Updating todo item with ID [{todo_id}] with payload [{payload}]...')
-        todos[todo_id] = payload
+        args = parser.parse_args()
+        task = args['task']
+        app.logger.debug(f'Updating todo item with ID [{todo_id}] with task [{task}]...')
+        todos[todo_id] = task
         return {todo_id: todos[todo_id]}, 201
+
+    @return_as_json_api
+    def delete(self, todo_id):
+        try:
+            del todos[todo_id]
+            return '', 204
+        except KeyError:
+            abort(404, message=f'Todo item with ID [{todo_id}] does not exist.')
 
 
 @api.resource('/todos')
@@ -135,6 +169,16 @@ class TodoList(Resource):
     def get(self):
         app.logger.debug('Fetching all todo items...')
         return todos
+
+    @return_as_json_api
+    def post(self):
+        args = parser.parse_args()
+        task = args['task']
+        todo_id = int(max(todos.keys()).lstrip('todo')) + 1
+        todo_id = f'todo{todo_id}'
+        app.logger.debug(f'Creating new todo item with ID [{todo_id}] and task [{task}]...')
+        todos[todo_id] = task
+        return todos[todo_id], 201
 
 
 @api.resource('/lms/users')
@@ -158,5 +202,6 @@ class LMSCourseList(Resource):
 # Views
 @app.route('/')
 def index():
-    app.logger.debug('Redirecting to /todos...')
-    return redirect('/todos')
+    todos_url = url_for('todos')
+    app.logger.debug(f'Redirecting to {todos_url}...')
+    return redirect(todos_url)
