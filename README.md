@@ -16,7 +16,7 @@ On the development machine, clone the Git repo:
 $ git clone https://github.com/lvaylet/rest-api
 ```
 
-Inside the cloned repo, create a `.env file to store secret credentials as environment variables:
+Inside the cloned repo, create a `.env` file to store secret credentials as environment variables:
 
 ```bash
 $ cd rest-api
