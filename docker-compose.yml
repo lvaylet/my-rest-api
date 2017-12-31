@@ -21,7 +21,7 @@ services:
     # NOTE: Gunicorn logs to stderr by default since 19.2, so no need for "--log-file -" or "--error-logfile -"
     command: >
       gunicorn
-        run:app
+        rest_api:app
         --bind 0.0.0.0:8000
         --access-logfile -
         --reload
