@@ -8,7 +8,7 @@ It also assumes you are using the `demo.localflynn.com` default domain (which is
 
 Reference: https://flynn.io/docs/basics
 
-## Development
+## Installation
 
 On the development machine, clone the Git repo:
 
@@ -44,14 +44,6 @@ origin	https://github.com/lvaylet/rest-api.git (fetch)
 origin	https://github.com/lvaylet/rest-api.git (push)
 ```
 
-A fully dockerized development environment lets you mimic the production environment with hot reloading while displaying the logs:
-
-```bash
-$ docker-compose up --build
-```
-
-# Deployment
-
 The app depends on Redis, so add a database:
 
 ```bash
@@ -78,6 +70,22 @@ Created release cf952afc-8386-4684-85a2-7416b386a92e.
 $ flynn env set LMS_TOKEN=<...>
 Created release 8accf819-dcc4-4776-ba16-652af979b3ae.
 ```
+
+## Development
+
+A fully dockerized development environment lets you mimic the production environment, complete with Redis database and hot reloading. You can build the image, run the full stack and display the logs with:
+
+```bash
+$ docker-compose up --build
+```
+
+Alternatively, you can use the `run.py` script to start a development server from your IDE (Pycharm, for example) and use debugging features. Do not forget to set the required environment variables (`FLASK_CONFIG` or `LMS_TOKEN`, for example). Make sure to provision a Redis server too. The default app configuration points to a local Redis container instantiated with:
+
+```bash
+$ docker run --name redis-devel -d -p 6379:6379 redis
+```
+
+## Deployment
 
 New releases are created by committing changes to Git and pushing those changes to Flynn. Push to the `flynn` Git remote to build and deploy the application:
 
@@ -157,7 +165,7 @@ flynn-fadaf881-37a4-4501-bf95-ba198125f723  web   up     5 seconds ago   81d38fd
 
 Repeated HTTP requests should show that the requests are load balanced across those processes and talk to the database.
 
-# Logs
+## Logs
 
 You can view the logs (the stdout/stderr streams) of all processes running in the app using the log command:
 
