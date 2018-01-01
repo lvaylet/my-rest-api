@@ -8,7 +8,7 @@ import logging
 import os
 
 import hammock
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, request
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_restful_swagger_2 import Api
@@ -102,4 +102,4 @@ api.add_resource(LMSCourseListResource, '/api/lms/courses')
 @app.route('/')
 @app.route('/api')
 def index():
-    return redirect('http://petstore.swagger.io/?url=http://localhost:8000/api/swagger.json', code=302)
+    return redirect(f'http://petstore.swagger.io/?url={request.url.rstrip("/")}/api/swagger.json', code=302)
